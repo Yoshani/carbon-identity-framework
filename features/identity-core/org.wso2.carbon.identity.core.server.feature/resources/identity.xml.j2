@@ -2434,6 +2434,10 @@
             <Permissions>/permission/admin/manage/identity/idpmgt/view</Permissions>
             <Scopes>internal_idp_view</Scopes>
         </Resource>
+        <Resource context="(.*)/api/server/v1/admin-advisory-management/banner" secured="false" http-method="GET">
+            <Permissions>none</Permissions>
+            <Scopes>none</Scopes>
+        </Resource>
         <Resource context="(.*)/api/server/v1/identity-governance/(.*)" secured="true" http-method="PATCH">
             <Permissions>/permission/admin/manage/identity/idpmgt/update</Permissions>
             <Scopes>internal_idp_update</Scopes>
