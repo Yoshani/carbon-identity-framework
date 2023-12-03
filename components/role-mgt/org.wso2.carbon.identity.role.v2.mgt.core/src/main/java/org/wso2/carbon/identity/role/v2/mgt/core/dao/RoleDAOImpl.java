@@ -97,6 +97,7 @@ import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.Error.SORT
 import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.Error.UNEXPECTED_SERVER_ERROR;
 import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.H2;
 import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.INFORMIX;
+import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.INTERNAL_DOMAIN;
 import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.MARIADB;
 import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.MICROSOFT;
 import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.MY_SQL;
@@ -105,6 +106,7 @@ import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.ORGANIZATI
 import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.POSTGRE_SQL;
 import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.RoleTableColumns.ROLE_NAME;
 import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.RoleTableColumns.USER_NOT_FOUND_ERROR_MESSAGE;
+import static org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants.SYSTEM;
 import static org.wso2.carbon.identity.role.v2.mgt.core.dao.SQLQueries.ADD_APP_ROLE_ASSOCIATION_SQL;
 import static org.wso2.carbon.identity.role.v2.mgt.core.dao.SQLQueries.ADD_GROUP_TO_ROLE_SQL;
 import static org.wso2.carbon.identity.role.v2.mgt.core.dao.SQLQueries.ADD_GROUP_TO_ROLE_SQL_MSSQL;
@@ -537,7 +539,8 @@ public class RoleDAOImpl implements RoleDAO {
         UserRealm userRealm;
         try {
             userRealm = CarbonContext.getThreadLocalCarbonContext().getUserRealm();
-            if (UserCoreUtil.isEveryoneRole(roleName, userRealm.getRealmConfiguration())) {
+            if (UserCoreUtil.isEveryoneRole(roleName, userRealm.getRealmConfiguration())
+                    || isInternalAdminOrSystemRole(roleId, tenantDomain, userRealm)) {
                 throw new IdentityRoleManagementClientException(OPERATION_FORBIDDEN.getCode(),
                         "Invalid operation. Role: " + roleName + " Cannot be deleted.");
             }
@@ -589,6 +592,51 @@ public class RoleDAOImpl implements RoleDAO {
                     String.format(message, roleName, tenantDomain), e);
         }
         clearUserRolesCacheByTenant(tenantId);
+    }
+
+    /**
+     * Check whether the given role is an internal admin or system role.
+     *
+     * @param roleId           Role ID.
+     * @param tenantDomain     Tenant domain.
+     * @param userRealm        User realm.
+     * @throws IdentityRoleManagementException IdentityRoleManagementException.
+     */
+    private boolean isInternalAdminOrSystemRole(String roleId, String tenantDomain, UserRealm userRealm)
+            throws IdentityRoleManagementException, UserStoreException {
+
+        RoleBasicInfo roleBasicInfo = getRoleBasicInfoById(roleId, tenantDomain);
+        /* There won't be multiple internal/admin and internal/system roles in the same organization
+        with organization audience. */
+        if (ORGANIZATION.equalsIgnoreCase(roleBasicInfo.getAudience())) {
+            String roleNameWithDomain = UserCoreUtil.addInternalDomainName(roleBasicInfo.getName());
+            return isInternalSystemRole(roleNameWithDomain) || isInternalAdminRole(roleNameWithDomain, userRealm);
+        }
+        return false;
+    }
+
+    /**
+     * Check whether the given role is an internal system role.
+     *
+     * @param roleName Role name with domain.
+     */
+    private boolean isInternalSystemRole(String roleName) {
+
+        String internalSystemRole = INTERNAL_DOMAIN + UserCoreConstants.DOMAIN_SEPARATOR + SYSTEM;
+        return internalSystemRole.equalsIgnoreCase(roleName);
+    }
+
+    /**
+     * Check whether the given role is an internal admin role.
+     *
+     * @param roleName  Role name with domain.
+     * @param userRealm User realm.
+     * @throws UserStoreException User store exception.
+     */
+    private boolean isInternalAdminRole(String roleName, UserRealm userRealm) throws UserStoreException {
+
+        RealmConfiguration realmConfig = userRealm.getRealmConfiguration();
+        return realmConfig.isPrimary() && realmConfig.getAdminRoleName().equalsIgnoreCase(roleName);
     }
 
     @Override
@@ -824,12 +872,72 @@ public class RoleDAOImpl implements RoleDAO {
                     roles.add(roleBasicInfo);
                 }
             }
+            if (!isSubOrgByTenant(tenantDomain)) {
+                roles.add(getEveryOneRole(tenantDomain));
+            }
         } catch (SQLException e) {
             String errorMessage =
                     "Error while retrieving role list of user by id: " + userId + " and tenantDomain : " + tenantDomain;
             throw new IdentityRoleManagementServerException(UNEXPECTED_SERVER_ERROR.getCode(), errorMessage, e);
         }
         return roles;
+    }
+
+    /**
+     * Get everyone role name.
+     *
+     * @param tenantDomain Tenant domain.
+     * @return every one role name.
+     * @throws IdentityRoleManagementException if error occurred while retrieving everyone role name.
+     */
+    private String getEveryOneRoleName(String tenantDomain) throws IdentityRoleManagementException {
+
+        String everyOneRoleName;
+        try {
+            everyOneRoleName = CarbonContext.getThreadLocalCarbonContext().getUserRealm().getRealmConfiguration()
+                    .getEveryOneRoleName();
+        } catch (UserStoreException e) {
+            throw new IdentityRoleManagementException("Error while retrieving everyone role name", e);
+        }
+        if (everyOneRoleName == null) {
+            String errorMessage =
+                    "Everyone role name not found for tenantDomain : " + tenantDomain;
+            throw new IdentityRoleManagementServerException(UNEXPECTED_SERVER_ERROR.getCode(), errorMessage);
+        }
+        return removeInternalDomain(everyOneRoleName);
+    }
+
+    /**
+     * Get everyone role basic info.
+     *
+     * @param tenantDomain Tenant domain.
+     * @return basic info of every one role.
+     * @throws IdentityRoleManagementException if error occurred while retrieving everyone role.
+     */
+    private RoleBasicInfo getEveryOneRole(String tenantDomain) throws IdentityRoleManagementException {
+
+        String everyOneRoleName = getEveryOneRoleName(tenantDomain);
+        String orgId = getOrganizationId(tenantDomain);
+        String roleId = getRoleIdByName(everyOneRoleName, ORGANIZATION, orgId, tenantDomain);
+        RoleBasicInfo roleBasicInfo = new RoleBasicInfo(roleId, everyOneRoleName);
+        roleBasicInfo.setAudience(ORGANIZATION);
+        roleBasicInfo.setAudienceId(getOrganizationId(tenantDomain));
+        roleBasicInfo.setAudienceName(getOrganizationName(orgId));
+        return roleBasicInfo;
+    }
+
+    /**
+     * Get everyone role id.
+     *
+     * @param tenantDomain Tenant domain.
+     * @return every one role id.
+     * @throws IdentityRoleManagementException if error occurred while retrieving everyone role id.
+     */
+    private String getEveryOneRoleId(String tenantDomain) throws IdentityRoleManagementException {
+
+        String everyOneRoleName = getEveryOneRoleName(tenantDomain);
+        String orgId = getOrganizationId(tenantDomain);
+        return getRoleIdByName(everyOneRoleName, ORGANIZATION, orgId, tenantDomain);
     }
 
     private String getUsernameByUserID(String userId, String tenantDomain) throws IdentityRoleManagementException {
@@ -953,6 +1061,9 @@ public class RoleDAOImpl implements RoleDAO {
                     String roleId = resultSet.getString(1);
                     roleIds.add(roleId);
                 }
+            }
+            if (!isSubOrgByTenant(tenantDomain)) {
+                roleIds.add(getEveryOneRoleId(tenantDomain));
             }
         } catch (SQLException e) {
             String errorMessage = "Error while retrieving role id list of user by id: " + userId + " and " +
@@ -1707,7 +1818,7 @@ public class RoleDAOImpl implements RoleDAO {
                 }
                 // Create new audience.
                 if (id == -1) {
-                    createRoleAudience(audience, audienceId, connection);
+                    createRoleAudience(audience, audienceId);
                     return getRoleAudienceRefId(audience, audienceId, connection);
                 }
             }
@@ -1735,7 +1846,7 @@ public class RoleDAOImpl implements RoleDAO {
                 }
                 // Create new audience.
                 if (id == -1) {
-                    createRoleAudience(audience, audienceId, connection);
+                    createRoleAudience(audience, audienceId);
                     return getRoleAudienceRefId(audience, audienceId, connection);
                 }
             }
@@ -1755,17 +1866,22 @@ public class RoleDAOImpl implements RoleDAO {
      * @param audienceId Audience ID.
      * @throws IdentityRoleManagementException IdentityRoleManagementException.
      */
-    private void createRoleAudience(String audience, String audienceId, Connection connection)
+    private void createRoleAudience(String audience, String audienceId)
             throws IdentityRoleManagementException {
 
-        try (NamedPreparedStatement statement = new NamedPreparedStatement(connection, ADD_ROLE_AUDIENCE_SQL)) {
-            statement.setString(RoleConstants.RoleTableColumns.UM_AUDIENCE, audience);
-            statement.setString(RoleConstants.RoleTableColumns.UM_AUDIENCE_ID, audienceId);
-            statement.executeUpdate();
-
-            IdentityDatabaseUtil.commitTransaction(connection);
+        try (Connection connection = IdentityDatabaseUtil.getUserDBConnection(true);) {
+            try (NamedPreparedStatement statement = new NamedPreparedStatement(connection, ADD_ROLE_AUDIENCE_SQL)) {
+                statement.setString(RoleConstants.RoleTableColumns.UM_AUDIENCE, audience);
+                statement.setString(RoleConstants.RoleTableColumns.UM_AUDIENCE_ID, audienceId);
+                statement.executeUpdate();
+                IdentityDatabaseUtil.commitTransaction(connection);
+            } catch (SQLException e) {
+                IdentityDatabaseUtil.rollbackTransaction(connection);
+                String errorMessage = "Error while adding role audiences for the given audience: " + audience
+                        + " and audienceId : " + audienceId;
+                throw new IdentityRoleManagementServerException(UNEXPECTED_SERVER_ERROR.getCode(), errorMessage, e);
+            }
         } catch (SQLException e) {
-            IdentityDatabaseUtil.rollbackTransaction(connection);
             String errorMessage = "Error while adding role audiences for the given audience: " + audience
                     + " and audienceId : " + audienceId;
             throw new IdentityRoleManagementServerException(UNEXPECTED_SERVER_ERROR.getCode(), errorMessage, e);
@@ -1806,7 +1922,7 @@ public class RoleDAOImpl implements RoleDAO {
 
         int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
         boolean isExist = false;
-        try (Connection connection = IdentityDatabaseUtil.getUserDBConnection(false)) {
+        try (Connection connection = IdentityDatabaseUtil.getUserDBConnection(true)) {
             int audienceRefId = getRoleAudienceRefId(audience, audienceId, connection);
             try (NamedPreparedStatement statement = new NamedPreparedStatement(connection, IS_ROLE_EXIST_SQL,
                     RoleConstants.RoleTableColumns.UM_ID)) {
@@ -2052,6 +2168,24 @@ public class RoleDAOImpl implements RoleDAO {
                     .getOrganizationNameById(organizationId);
         } catch (OrganizationManagementException e) {
             String errorMessage = "Error while retrieving the organization name for the given id: " + organizationId;
+            throw new IdentityRoleManagementServerException(UNEXPECTED_SERVER_ERROR.getCode(), errorMessage, e);
+        }
+    }
+
+    /**
+     * Get organization id by tenant domain.
+     *
+     * @param tenantDomain Tenant domain.
+     * @return organization id.
+     * @throws IdentityRoleManagementServerException IdentityRoleManagementServerException.
+     */
+    private String getOrganizationId(String tenantDomain) throws IdentityRoleManagementServerException {
+
+        try {
+            return RoleManagementServiceComponentHolder.getInstance().getOrganizationManager()
+                    .resolveOrganizationId(tenantDomain);
+        } catch (OrganizationManagementException e) {
+            String errorMessage = "Error while retrieving the organization id for the tenant domain: " + tenantDomain;
             throw new IdentityRoleManagementServerException(UNEXPECTED_SERVER_ERROR.getCode(), errorMessage, e);
         }
     }

@@ -100,6 +100,7 @@ import org.wso2.carbon.identity.application.authentication.framework.store.UserS
 import org.wso2.carbon.identity.application.common.model.Claim;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
+import org.wso2.carbon.identity.application.common.model.IdPGroup;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.application.common.model.IdentityProviderProperty;
 import org.wso2.carbon.identity.application.common.model.Property;
@@ -125,6 +126,7 @@ import org.wso2.carbon.identity.event.IdentityEventException;
 import org.wso2.carbon.identity.event.event.Event;
 import org.wso2.carbon.identity.event.services.IdentityEventService;
 import org.wso2.carbon.identity.multi.attribute.login.mgt.ResolvedUserResult;
+import org.wso2.carbon.identity.role.v2.mgt.core.exception.IdentityRoleManagementException;
 import org.wso2.carbon.identity.user.profile.mgt.association.federation.FederatedAssociationManager;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 import org.wso2.carbon.idp.mgt.IdentityProviderManager;
@@ -1512,12 +1514,14 @@ public class FrameworkUtils {
 
         Map<String, String> remoteToLocalClaimMap = new HashMap<String, String>();
 
-        for (Entry<ClaimMapping, String> entry : claimMappings.entrySet()) {
-            ClaimMapping claimMapping = entry.getKey();
-            if (useLocalDialectAsKey) {
-                remoteToLocalClaimMap.put(claimMapping.getLocalClaim().getClaimUri(), entry.getValue());
-            } else {
-                remoteToLocalClaimMap.put(claimMapping.getRemoteClaim().getClaimUri(), entry.getValue());
+        if (claimMappings != null) {
+            for (Entry<ClaimMapping, String> entry : claimMappings.entrySet()) {
+                ClaimMapping claimMapping = entry.getKey();
+                if (useLocalDialectAsKey) {
+                    remoteToLocalClaimMap.put(claimMapping.getLocalClaim().getClaimUri(), entry.getValue());
+                } else {
+                    remoteToLocalClaimMap.put(claimMapping.getRemoteClaim().getClaimUri(), entry.getValue());
+                }
             }
         }
         return remoteToLocalClaimMap;
@@ -2347,6 +2351,71 @@ public class FrameworkUtils {
     }
 
     /**
+     * Get the roles assigned to the federated user.
+     *
+     * @param externalIdPConfig     External IDP Config.
+     * @param extAttributesValueMap Attributes map.
+     * @param idpGroupClaimUri      IDP group claim URI.
+     * @param tenantDomain          Tenant domain.
+     * @return List of roles assigned to the federated user.
+     * @throws FrameworkException If an error occurred while getting the roles assigned to the federated user.
+     */
+    public static List<String> getAssignedRolesFromIdPGroups(ExternalIdPConfig externalIdPConfig,
+                                                             Map<String, String> extAttributesValueMap,
+                                                             String idpGroupClaimUri, String tenantDomain)
+            throws FrameworkException {
+
+        if (idpGroupClaimUri == null) {
+            // Since idpGroupClaimUri is not defined cannot do role assignment.
+            if (log.isDebugEnabled()) {
+                log.debug("Group claim uri is not configured for the external IDP: " + externalIdPConfig.getIdPName()
+                        + ", in Domain: " + externalIdPConfig.getDomain() + ".");
+            }
+            return new ArrayList<>();
+        }
+        String idpGroupAttrValue = null;
+        if (extAttributesValueMap != null) {
+            idpGroupAttrValue = extAttributesValueMap.get(idpGroupClaimUri);
+        }
+        List<String> idpGroupValues;
+        String federatedIDPRoleClaimAttributeSeparator;
+        if (idpGroupAttrValue != null) {
+            if (IdentityUtil.getProperty(FrameworkConstants.FEDERATED_IDP_ROLE_CLAIM_VALUE_SEPARATOR) != null) {
+                federatedIDPRoleClaimAttributeSeparator = IdentityUtil.getProperty(FrameworkConstants
+                        .FEDERATED_IDP_ROLE_CLAIM_VALUE_SEPARATOR);
+                if (log.isDebugEnabled()) {
+                    log.debug("The IDP side role claim value separator is configured as : "
+                            + federatedIDPRoleClaimAttributeSeparator);
+                }
+            } else {
+                federatedIDPRoleClaimAttributeSeparator = FrameworkUtils.getMultiAttributeSeparator();
+            }
+
+            idpGroupValues = Arrays.asList(idpGroupAttrValue.split(federatedIDPRoleClaimAttributeSeparator));
+        } else {
+            // No identity provider group values found.
+            if (log.isDebugEnabled()) {
+                log.debug("No group attribute value has received from the external IDP: "
+                        + externalIdPConfig.getIdPName() + ", in Domain: " + externalIdPConfig.getDomain() + ".");
+            }
+            return new ArrayList<>();
+        }
+        IdPGroup[] possibleIDPGroups = externalIdPConfig.getIdentityProvider().getIdPGroupConfig();
+        List<String> idpGroupIds =  new ArrayList<>();
+        for (IdPGroup idpGroup : possibleIDPGroups) {
+            if (idpGroup.getIdpGroupId() != null && idpGroupValues.contains(idpGroup.getIdpGroupName())) {
+                idpGroupIds.add(idpGroup.getIdpGroupId());
+            }
+        }
+        try {
+            return FrameworkServiceDataHolder.getInstance().getRoleManagementServiceV2()
+                    .getRoleIdListOfIdpGroups(idpGroupIds, tenantDomain);
+        } catch (IdentityRoleManagementException e) {
+            throw new FrameworkException("Error while getting role ids of idp groups.", e);
+        }
+    }
+
+    /**
      * To get the role claim uri of an IDP.
      *
      * @param externalIdPConfig Relevant external IDP Config.
@@ -2370,6 +2439,22 @@ public class FrameworkUtils {
             }
         }
         return idpRoleClaimUri;
+    }
+
+    /**
+     * Returns the group claim uri of an IDP.
+     *
+     * @param externalIdPConfig Relevant external IDP Config.
+     * @return IDP group claim URI.
+     */
+    public static String getIdpGroupClaimUri(ExternalIdPConfig externalIdPConfig) {
+
+        return Arrays.stream(externalIdPConfig.getClaimMappings())
+                .filter(claimMap ->
+                        FrameworkConstants.GROUPS_CLAIM.equals(claimMap.getLocalClaim().getClaimUri()))
+                .map(claimMap -> claimMap.getRemoteClaim().getClaimUri())
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -3558,5 +3643,16 @@ public class FrameworkUtils {
                 return null;
             }
         }
+    }
+
+    /**
+     * This method will check whether the authentication flow is API based or not.
+     *
+     * @param request Http servlet request.
+     * @return True if the authentication flow is API based.
+     */
+    public static boolean isAPIBasedAuthenticationFlow(HttpServletRequest request) {
+
+        return Boolean.TRUE.equals(request.getAttribute(FrameworkConstants.IS_API_BASED_AUTH_FLOW));
     }
 }

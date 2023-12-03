@@ -217,6 +217,7 @@ public abstract class FrameworkConstants {
     public static final String ORACLE = "Oracle";
 
     public static final String SCRIPT_ENGINE_CONFIG = "AdaptiveAuth.ScriptEngine";
+    public static final String THREAD_LOCAL_SCRIPT_ENGINE_CONFIG = "AdaptiveAuth.LimitScriptEngineCreation";
     public static final String OPENJDK_NASHORN = "openjdkNashorn";
     public static final String NASHORN = "nashorn";
 
@@ -588,6 +589,7 @@ public abstract class FrameworkConstants {
         public static final String FORCE_AUTH_PARAM = "forceAuth";
         public static final String SUBJECT_IDENTIFIER_PARAM = "markAsSubjectIdentifierStep";
         public static final String SUBJECT_ATTRIBUTE_PARAM = "markAsSubjectAttributeStep";
+        public static final String SKIP_PROMPT = "skipPrompt";
     }
 
     /**

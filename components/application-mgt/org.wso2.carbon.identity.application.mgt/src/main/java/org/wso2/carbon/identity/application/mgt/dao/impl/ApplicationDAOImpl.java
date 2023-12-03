@@ -394,9 +394,9 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         PreparedStatement storeAppPrepStmt = null;
         ResultSet results = null;
         try {
+            String templatedAccessUrl = application.getAccessUrl();
             if (ApplicationMgtUtil.isConsoleOrMyAccount(applicationName)) {
-                application.setAccessUrl(
-                        ApplicationMgtUtil.replaceUrlOriginWithPlaceholders(application.getAccessUrl()));
+                templatedAccessUrl = ApplicationMgtUtil.replaceUrlOriginWithPlaceholders(templatedAccessUrl);
             }
             String resourceId = generateApplicationResourceId(application);
             String dbProductName = connection.getMetaData().getDatabaseProductName();
@@ -418,7 +418,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             storeAppPrepStmt.setString(9, "0");
             storeAppPrepStmt.setString(10, resourceId);
             storeAppPrepStmt.setString(11, application.getImageUrl());
-            storeAppPrepStmt.setString(12, application.getAccessUrl());
+            storeAppPrepStmt.setString(12, templatedAccessUrl);
             storeAppPrepStmt.execute();
 
             results = storeAppPrepStmt.getGeneratedKeys();
@@ -474,7 +474,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 log.debug("Application Stored successfully with applicationId: " + applicationId +
                         " and applicationResourceId: " + resourceId);
             }
-
+            application.setApplicationResourceId(resourceId);
             return new ApplicationCreateResult(resourceId, applicationId);
         } catch (URLBuilderException e) {
             throw new IdentityApplicationManagementException(
@@ -990,10 +990,10 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             sql = ApplicationMgtDBQueries.UPDATE_BASIC_APPINFO;
         }
 
+        String templatedAccessUrl = serviceProvider.getAccessUrl();
         if (ApplicationMgtUtil.isConsoleOrMyAccount(applicationName)) {
             try {
-                serviceProvider.setAccessUrl(
-                        ApplicationMgtUtil.replaceUrlOriginWithPlaceholders(serviceProvider.getAccessUrl()));
+                templatedAccessUrl = ApplicationMgtUtil.replaceUrlOriginWithPlaceholders(templatedAccessUrl);
             } catch (URLBuilderException e) {
                 throw new IdentityApplicationManagementException(
                         "Error occurred when replacing origin of the access URL with placeholders", e);
@@ -1006,7 +1006,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             statement.setString(ApplicationTableColumns.IS_SAAS_APP, isSaasApp ? "1" : "0");
             statement.setString(ApplicationTableColumns.IS_DISCOVERABLE, isDiscoverable ? "1" : "0");
             statement.setString(ApplicationTableColumns.IMAGE_URL, serviceProvider.getImageUrl());
-            statement.setString(ApplicationTableColumns.ACCESS_URL, serviceProvider.getAccessUrl());
+            statement.setString(ApplicationTableColumns.ACCESS_URL, templatedAccessUrl);
             if (isValidUserForOwnerUpdate) {
                 User owner = serviceProvider.getOwner();
                 statement.setString(ApplicationTableColumns.USERNAME, owner.getUserName());
@@ -5060,7 +5060,9 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         ServiceProviderProperty androidPackageName = new ServiceProviderProperty();
         androidPackageName.setName(ANDROID_PACKAGE_NAME_PROPERTY_NAME);
         androidPackageName.setDisplayName(ANDROID_PACKAGE_NAME_DISPLAY_NAME);
-        androidPackageName.setValue(String.valueOf(clientAttestationMetaData.getAndroidPackageName()));
+        if (StringUtils.isNotBlank(clientAttestationMetaData.getAndroidPackageName())) {
+            androidPackageName.setValue(String.valueOf(clientAttestationMetaData.getAndroidPackageName()));
+        }
         return androidPackageName;
     }
 
@@ -5070,7 +5072,9 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         ServiceProviderProperty appleAppId = new ServiceProviderProperty();
         appleAppId.setName(APPLE_APP_ID_PROPERTY_NAME);
         appleAppId.setDisplayName(APPLE_APP_ID_DISPLAY_NAME);
-        appleAppId.setValue(String.valueOf(clientAttestationMetaData.getAppleAppId()));
+        if (StringUtils.isNotBlank(clientAttestationMetaData.getAppleAppId())) {
+            appleAppId.setValue(String.valueOf(clientAttestationMetaData.getAppleAppId()));
+        }
         return appleAppId;
     }
 
