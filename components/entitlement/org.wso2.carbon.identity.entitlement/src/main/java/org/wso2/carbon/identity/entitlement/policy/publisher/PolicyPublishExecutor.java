@@ -65,8 +65,9 @@ public class PolicyPublishExecutor {
         this.policyIds = policyIds;
         if (toPDP) {
             this.subscriberIds = new String[]{"PDPSubscriber"};
+        } else {
+            this.subscriberIds = subscriberIds;
         }
-        this.subscriberIds = subscriberIds;
         this.action = action;
         this.version = version;
         this.publisher = publisher;
