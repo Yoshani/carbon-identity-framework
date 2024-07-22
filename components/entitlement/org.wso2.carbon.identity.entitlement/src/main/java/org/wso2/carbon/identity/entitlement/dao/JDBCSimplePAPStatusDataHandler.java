@@ -164,7 +164,7 @@ public class JDBCSimplePAPStatusDataHandler implements PAPStatusDataHandler {
      * @param key   key value of the status.
      * @throws EntitlementException if fails to delete.
      */
-    private void deletePersistedData(String about, String key) throws EntitlementException {
+    public void deletePersistedData(String about, String key) throws EntitlementException {
 
         int tenantId = CarbonContext.getThreadLocalCarbonContext().getTenantId();
         String query = EntitlementConstants.Status.ABOUT_POLICY.equals(about) ?
@@ -180,7 +180,7 @@ public class JDBCSimplePAPStatusDataHandler implements PAPStatusDataHandler {
         }
     }
 
-    private void persistStatus(String about, String key, List<StatusHolder> statusHolders) throws EntitlementException {
+    public void persistStatus(String about, String key, List<StatusHolder> statusHolders) throws EntitlementException {
 
         boolean useLastStatusOnly = Boolean.parseBoolean(
                 IdentityUtil.getProperty(EntitlementConstants.PROP_USE_LAST_STATUS_ONLY));
