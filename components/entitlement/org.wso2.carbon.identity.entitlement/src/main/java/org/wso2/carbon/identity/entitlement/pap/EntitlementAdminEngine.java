@@ -23,10 +23,8 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.context.CarbonContext;
 import org.wso2.carbon.identity.entitlement.PAPStatusDataHandler;
 import org.wso2.carbon.identity.entitlement.dao.ConfigDAO;
+import org.wso2.carbon.identity.entitlement.dao.DAOFactory;
 import org.wso2.carbon.identity.entitlement.dao.PolicyDAO;
-import org.wso2.carbon.identity.entitlement.dao.RegistryConfigDAOImpl;
-import org.wso2.carbon.identity.entitlement.dao.RegistryPolicyDAOImpl;
-import org.wso2.carbon.identity.entitlement.dao.RegistrySubscriberDAOImpl;
 import org.wso2.carbon.identity.entitlement.dao.SubscriberDAO;
 import org.wso2.carbon.identity.entitlement.internal.EntitlementServiceComponent;
 import org.wso2.carbon.identity.entitlement.pap.store.PAPPolicyStoreManager;
@@ -67,9 +65,9 @@ public class EntitlementAdminEngine {
         papStatusDataHandlers = statusDataHandlers.keySet();
         this.policyPublisher.setPapStatusDataHandlers(papStatusDataHandlers);
         this.policyStoreManager = new PolicyStoreManager();
-        this.configDAO = new RegistryConfigDAOImpl();
-        this.policyDAO = new RegistryPolicyDAOImpl();
-        this.subscriberDAO = new RegistrySubscriberDAOImpl();
+        this.configDAO = DAOFactory.getConfigDAO();
+        this.policyDAO = DAOFactory.getPolicyDAO();
+        this.subscriberDAO = DAOFactory.getSubscriberDAO();
 
     }
 

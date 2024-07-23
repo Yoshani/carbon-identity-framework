@@ -153,7 +153,7 @@ public class SimplePAPStatusDataHandler implements PAPStatusDataHandler {
         }
     }
 
-    private synchronized void deletedPersistedData(String path) throws EntitlementException {
+    public synchronized void deletedPersistedData(String path) throws EntitlementException {
 
         Registry registry = null;
         int tenantId = CarbonContext.getThreadLocalCarbonContext().getTenantId();

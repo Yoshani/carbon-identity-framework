@@ -75,6 +75,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -635,5 +636,20 @@ public class EntitlementUtil {
             attributeMap.put(policyDTO.getPolicyId(), attributeDTOs);
         }
         return attributeMap;
+    }
+
+    /**
+     * Merges two lists and removes duplicates.
+     *
+     * @param list1 first list.
+     * @param list2 second list.
+     * @return Merged list without duplicates.
+     */
+    public static <T> List<T> mergeAndRemoveDuplicates(List<T> list1, List<T> list2) {
+
+        Set<T> uniqueElements = new HashSet<>();
+        uniqueElements.addAll(list1);
+        uniqueElements.addAll(list2);
+        return new ArrayList<>(uniqueElements);
     }
 }

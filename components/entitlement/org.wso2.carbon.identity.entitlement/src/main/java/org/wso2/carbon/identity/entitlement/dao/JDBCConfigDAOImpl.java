@@ -100,7 +100,7 @@ public class JDBCConfigDAOImpl implements ConfigDAO {
         }
     }
 
-    private String getPolicyCombiningAlgorithm() {
+    public String getPolicyCombiningAlgorithm() {
 
         int tenantId = CarbonContext.getThreadLocalCarbonContext().getTenantId();
         String algorithm = null;

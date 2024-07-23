@@ -20,6 +20,8 @@ package org.wso2.carbon.identity.entitlement.dto;
 
 import org.wso2.carbon.context.CarbonContext;
 
+import java.util.Objects;
+
 /**
  *
  */
@@ -168,5 +170,26 @@ public class StatusHolder {
 
     public void setTargetAction(String targetAction) {
         this.targetAction = targetAction;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StatusHolder that = (StatusHolder) o;
+        return success == that.success &&
+                Objects.equals(type, that.type) &&
+                Objects.equals(key, that.key) &&
+                Objects.equals(version, that.version) &&
+                Objects.equals(user, that.user) &&
+                Objects.equals(target, that.target) &&
+                Objects.equals(targetAction, that.targetAction) &&
+                Objects.equals(timeInstance, that.timeInstance) &&
+                Objects.equals(message, that.message);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, key, version, success, user, target, targetAction, timeInstance, message);
     }
 }

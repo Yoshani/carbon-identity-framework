@@ -101,6 +101,7 @@ import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.G
 import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_PAP_POLICY_SET_REFS_SQL;
 import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_PAP_POLICY_SQL;
 import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_PDP_POLICY_SQL;
+import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_POLICY_PAP_PRESENCE_SQL;
 import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_POLICY_PDP_PRESENCE_BY_VERSION_SQL;
 import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_POLICY_PDP_PRESENCE_SQL;
 import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_POLICY_VERSIONS_SQL;
@@ -838,6 +839,33 @@ public class JDBCPolicyDAOImpl extends AbstractPolicyFinderModule implements Pol
         } catch (SQLException e) {
             IdentityDatabaseUtil.rollbackTransaction(connection);
             LOG.error(String.format("Error while demoting policy %s", policyId), e);
+        } finally {
+            IdentityDatabaseUtil.closeConnection(connection);
+        }
+    }
+
+    public boolean isExists(String policyId) {
+
+        Connection connection = IdentityDatabaseUtil.getDBConnection(false);
+        int tenantId = CarbonContext.getThreadLocalCarbonContext().getTenantId();
+
+        if (policyId == null || policyId.trim().isEmpty()) {
+            return false;
+        }
+
+        try (NamedPreparedStatement getPolicyPublishStatus = new NamedPreparedStatement(connection,
+                GET_POLICY_PAP_PRESENCE_SQL)) {
+            getPolicyPublishStatus.setString(POLICY_ID, policyId);
+            getPolicyPublishStatus.setBoolean(IS_IN_PAP, IN_PAP);
+            getPolicyPublishStatus.setInt(TENANT_ID, tenantId);
+
+            try (ResultSet rs = getPolicyPublishStatus.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            LOG.error(String.format("Error while checking the published status of the policy %s", policyId), e);
+            return false;
         } finally {
             IdentityDatabaseUtil.closeConnection(connection);
         }
