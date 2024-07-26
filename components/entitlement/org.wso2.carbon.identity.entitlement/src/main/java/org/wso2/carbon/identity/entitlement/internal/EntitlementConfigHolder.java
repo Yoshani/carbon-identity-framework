@@ -31,6 +31,7 @@ import org.wso2.carbon.identity.entitlement.policy.finder.PolicyFinderModule;
 import org.wso2.carbon.identity.entitlement.policy.publisher.PolicyPublisherModule;
 import org.wso2.carbon.identity.entitlement.policy.publisher.PostPublisherModule;
 import org.wso2.carbon.identity.entitlement.policy.publisher.PublisherVerificationModule;
+import org.wso2.carbon.identity.entitlement.policy.store.PolicyStoreManageModule;
 import org.wso2.carbon.utils.ConfigurationContextService;
 
 import java.util.ArrayList;
@@ -109,8 +110,8 @@ public class EntitlementConfigHolder {
     /**
      * This holds all the policy storing logic of entitlement engine
      */
-    private Map<PolicyDAO, Properties> policyStore =
-            new HashMap<PolicyDAO, Properties>();
+    private Map<PolicyStoreManageModule, Properties> policyStore =
+            new HashMap<>();
 
     /**
      * This holds the policy schema against its version
@@ -228,11 +229,11 @@ public class EntitlementConfigHolder {
         this.policyCollections.put(collection, properties);
     }
 
-    public Map<PolicyDAO, Properties> getPolicyStore() {
+    public Map<PolicyStoreManageModule, Properties> getPolicyStore() {
         return policyStore;
     }
 
-    public void addPolicyStore(PolicyDAO policyStoreStore, Properties properties) {
+    public void addPolicyStore(PolicyStoreManageModule policyStoreStore, Properties properties) {
         this.policyStore.put(policyStoreStore, properties);
     }
 

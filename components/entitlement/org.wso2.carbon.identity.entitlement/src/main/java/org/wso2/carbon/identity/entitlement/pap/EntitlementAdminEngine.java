@@ -31,6 +31,8 @@ import org.wso2.carbon.identity.entitlement.dao.SubscriberDAO;
 import org.wso2.carbon.identity.entitlement.internal.EntitlementServiceComponent;
 import org.wso2.carbon.identity.entitlement.pap.store.PAPPolicyStoreManager;
 import org.wso2.carbon.identity.entitlement.policy.publisher.PolicyPublisher;
+import org.wso2.carbon.identity.entitlement.policy.store.DefaultPolicyDataStore;
+import org.wso2.carbon.identity.entitlement.policy.store.PolicyDataStore;
 import org.wso2.carbon.identity.entitlement.policy.store.PolicyStoreManager;
 
 import java.util.Map;
@@ -49,6 +51,7 @@ public class EntitlementAdminEngine {
     private static Log log = LogFactory.getLog(EntitlementAdminEngine.class);
     private PolicyPublisher policyPublisher;
     private EntitlementDataFinder entitlementDataFinder;
+    private PolicyDataStore policyDataStore;
     private PolicyStoreManager policyStoreManager;
     private PAPPolicyStoreManager papPolicyStoreManager;
     private Set<PAPStatusDataHandler> papStatusDataHandlers;
@@ -61,12 +64,13 @@ public class EntitlementAdminEngine {
         this.entitlementDataFinder = new EntitlementDataFinder();
         this.policyPublisher = new PolicyPublisher();
         this.papPolicyStoreManager = new PAPPolicyStoreManager();
+        this.policyDataStore = new DefaultPolicyDataStore();
 
         Map<PAPStatusDataHandler, Properties> statusDataHandlers = EntitlementServiceComponent.
                 getEntitlementConfig().getPapStatusDataHandlers();
         papStatusDataHandlers = statusDataHandlers.keySet();
         this.policyPublisher.setPapStatusDataHandlers(papStatusDataHandlers);
-        this.policyStoreManager = new PolicyStoreManager();
+        this.policyStoreManager = new PolicyStoreManager(policyDataStore);
         this.configDAO = new RegistryConfigDAOImpl();
         this.policyDAO = new RegistryPolicyDAOImpl();
         this.subscriberDAO = new RegistrySubscriberDAOImpl();

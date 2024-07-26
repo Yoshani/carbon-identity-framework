@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.entitlement.PolicyOrderComparator;
 import org.wso2.carbon.identity.entitlement.dto.AttributeDTO;
 import org.wso2.carbon.identity.entitlement.dto.PolicyDTO;
+import org.wso2.carbon.identity.entitlement.dto.PolicyStoreDTO;
 import org.wso2.carbon.identity.entitlement.pap.EntitlementAdminEngine;
 import org.wso2.carbon.identity.entitlement.pdp.EntitlementEngine;
 
@@ -62,14 +63,14 @@ public abstract class AbstractPolicyFinderModule implements PolicyFinderModule {
         log.debug("Start retrieving ordered policy identifiers at : " + new Date());
         String[] policyIdentifiers = getPolicyIdentifiers();
         if (policyIdentifiers != null && !isPolicyOrderingSupport()) {
-            PolicyDTO[] policyDTOs = EntitlementAdminEngine.getInstance().
-                    getPolicyStoreManager().getLightPolicies();
+            PolicyStoreDTO[] policyDTOs = EntitlementAdminEngine.getInstance().
+                    getPolicyStoreManager().getAllPolicyData();
             Arrays.sort(policyDTOs, new PolicyOrderComparator());
             List<String> list = new ArrayList<String>();
             List<String> finalList = new ArrayList<String>();
             // 1st put non -order items
             list.addAll(Arrays.asList(policyIdentifiers));
-            for (PolicyDTO dto : policyDTOs) {
+            for (PolicyStoreDTO dto : policyDTOs) {
                 list.remove(dto.getPolicyId());
                 finalList.add(dto.getPolicyId());
             }
