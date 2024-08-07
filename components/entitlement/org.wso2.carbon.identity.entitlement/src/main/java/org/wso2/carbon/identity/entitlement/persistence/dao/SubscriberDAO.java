@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.entitlement.dao.puredao;
+package org.wso2.carbon.identity.entitlement.persistence.dao;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -32,29 +32,29 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.DISPLAY_NAME;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.DISPLAY_ORDER;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.ENTITLEMENT_MODULE_NAME;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.IS_REQUIRED;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.IS_SECRET;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.MODULE;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.PROPERTY_ID;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.PROPERTY_VALUE;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.SUBSCRIBER_ID;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.EntitlementTableColumns.TENANT_ID;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.CREATE_SUBSCRIBER_PROPERTIES_SQL;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.CREATE_SUBSCRIBER_SQL;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.DELETE_SUBSCRIBER_SQL;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_SUBSCRIBER_EXISTENCE_SQL;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_SUBSCRIBER_IDS_SQL;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.GET_SUBSCRIBER_SQL;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.UPDATE_SUBSCRIBER_MODULE_SQL;
-import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.UPDATE_SUBSCRIBER_PROPERTIES_SQL;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.DISPLAY_NAME;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.DISPLAY_ORDER;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.ENTITLEMENT_MODULE_NAME;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.IS_REQUIRED;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.IS_SECRET;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.MODULE;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.PROPERTY_ID;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.PROPERTY_VALUE;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.SUBSCRIBER_ID;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.EntitlementTableColumns.TENANT_ID;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.CREATE_SUBSCRIBER_PROPERTIES_SQL;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.CREATE_SUBSCRIBER_SQL;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.DELETE_SUBSCRIBER_SQL;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_SUBSCRIBER_EXISTENCE_SQL;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_SUBSCRIBER_IDS_SQL;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_SUBSCRIBER_SQL;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.UPDATE_SUBSCRIBER_MODULE_SQL;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.UPDATE_SUBSCRIBER_PROPERTIES_SQL;
 
 /**
  * This class handles the JDBC operations of the subscribers in the data store.
  */
-public class SubscriberPureDAO {
+public class SubscriberDAO {
 
     /**
      * DAO method to get the requested subscriber.
