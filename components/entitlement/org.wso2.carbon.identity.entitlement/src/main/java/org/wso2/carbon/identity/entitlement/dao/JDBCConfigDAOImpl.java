@@ -22,7 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.context.CarbonContext;
 import org.wso2.carbon.identity.entitlement.EntitlementException;
-import org.wso2.carbon.identity.entitlement.dao.puredao.ConfigPureDAO;
+import org.wso2.carbon.identity.entitlement.dao.cache.CacheBackedConfigPureDAO;
 
 import static org.wso2.carbon.identity.entitlement.PDPConstants.Algorithms.DENY_OVERRIDES;
 
@@ -32,7 +32,7 @@ import static org.wso2.carbon.identity.entitlement.PDPConstants.Algorithms.DENY_
 public class JDBCConfigDAOImpl implements ConfigDAO {
 
     private static final Log LOG = LogFactory.getLog(JDBCConfigDAOImpl.class);
-    private static final ConfigPureDAO configPureDAO = ConfigPureDAO.getInstance();
+    private static final CacheBackedConfigPureDAO configPureDAO = CacheBackedConfigPureDAO.getInstance();
 
     /**
      * Gets the policy combining algorithm name of the PDP.

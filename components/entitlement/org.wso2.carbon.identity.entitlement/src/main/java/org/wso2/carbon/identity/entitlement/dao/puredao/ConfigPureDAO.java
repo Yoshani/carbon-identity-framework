@@ -39,13 +39,6 @@ import static org.wso2.carbon.identity.entitlement.dao.DAOConstants.SQLQueries.U
  */
 public class ConfigPureDAO {
 
-    private static final ConfigPureDAO instance = new ConfigPureDAO();
-
-    public static ConfigPureDAO getInstance() {
-
-        return instance;
-    }
-
     /**
      * DAO method to get the policy combining algorithm from the data store.
      *

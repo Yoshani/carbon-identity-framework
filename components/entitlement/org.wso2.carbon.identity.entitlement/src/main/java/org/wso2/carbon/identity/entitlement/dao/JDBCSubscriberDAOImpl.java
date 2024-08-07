@@ -26,7 +26,7 @@ import org.wso2.carbon.core.util.CryptoUtil;
 import org.wso2.carbon.identity.entitlement.EntitlementException;
 import org.wso2.carbon.identity.entitlement.EntitlementUtil;
 import org.wso2.carbon.identity.entitlement.common.EntitlementConstants;
-import org.wso2.carbon.identity.entitlement.dao.puredao.SubscriberPureDAO;
+import org.wso2.carbon.identity.entitlement.dao.cache.CacheBackedSubscriberPureDAO;
 import org.wso2.carbon.identity.entitlement.dto.PublisherDataHolder;
 import org.wso2.carbon.identity.entitlement.dto.PublisherPropertyDTO;
 
@@ -40,7 +40,7 @@ public class JDBCSubscriberDAOImpl implements SubscriberDAO {
 
     private static final Log LOG = LogFactory.getLog(JDBCSubscriberDAOImpl.class);
     private static final String ERROR_SUBSCRIBER_ID_NULL = "Subscriber Id can not be null";
-    private static final SubscriberPureDAO subscriberPureDAO = new SubscriberPureDAO();
+    private static final CacheBackedSubscriberPureDAO subscriberPureDAO = new CacheBackedSubscriberPureDAO();
 
     /**
      * Gets the requested subscriber.
