@@ -83,6 +83,7 @@ import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManage
 import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_PAP_POLICY_REFS_SQL;
 import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_PAP_POLICY_SET_REFS_SQL;
 import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_PAP_POLICY_SQL;
+import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_PDP_POLICY_IDS_SQL;
 import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_PDP_POLICY_SQL;
 import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_POLICY_PAP_PRESENCE_SQL;
 import static org.wso2.carbon.identity.entitlement.persistence.PersistenceManagerConstants.SQLQueries.GET_POLICY_PDP_PRESENCE_BY_VERSION_SQL;
@@ -448,7 +449,7 @@ public class PolicyDAO {
      * @param tenantId tenant ID.
      * @return latest version of the policy.
      */
-    public PolicyDTO getPDPPolicy(String policyId, int tenantId) {
+    public PolicyStoreDTO getPDPPolicy(String policyId, int tenantId) {
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
             try (NamedPreparedStatement prepStmt = new NamedPreparedStatement(connection, GET_PDP_POLICY_SQL)) {
@@ -458,13 +459,12 @@ public class PolicyDAO {
 
                 try (ResultSet resultSet = prepStmt.executeQuery()) {
                     if (resultSet.next()) {
-                        PolicyDTO dto = new PolicyDTO();
+                        PolicyStoreDTO dto = new PolicyStoreDTO();
                         String policyString = resultSet.getString(POLICY);
                         dto.setPolicyId(policyId);
                         dto.setPolicy(policyString);
                         dto.setPolicyOrder(resultSet.getInt(POLICY_ORDER));
                         dto.setActive(resultSet.getBoolean(IS_ACTIVE));
-                        dto.setPolicyType(resultSet.getString(POLICY_TYPE));
                         // Get policy attributes
                         int version = resultSet.getInt(VERSION);
                         dto.setAttributeDTOs(getPolicyAttributes(connection, tenantId, policyId, version));
@@ -484,7 +484,7 @@ public class PolicyDAO {
      * @return policies as PolicyDTO[].
      * @throws EntitlementException throws if fails.
      */
-    public PolicyDTO[] getAllPDPPolicies(int tenantId) throws EntitlementException {
+    public PolicyStoreDTO[] getAllPDPPolicies(int tenantId) throws EntitlementException {
 
         List<PolicyDTO> policies = new ArrayList<>();
 
@@ -498,25 +498,49 @@ public class PolicyDAO {
                 try (ResultSet policySet = prepStmt.executeQuery()) {
                     while (policySet.next()) {
                         String policy = policySet.getString(POLICY);
-                        AbstractPolicy absPolicy = PAPPolicyReader.getInstance(null).getPolicy(policy);
-                        String policyId = absPolicy.getId().toASCIIString();
+                        String policyId = policySet.getString(POLICY_ID);
                         int version = policySet.getInt(VERSION);
+                        AttributeDTO[] attributes = getPolicyAttributes(connection, tenantId, policyId, version);
 
                         PolicyDTO dto = new PolicyDTO();
                         dto.setPolicyId(policyId);
                         dto.setPolicy(policy);
                         dto.setPolicyOrder(policySet.getInt(POLICY_ORDER));
                         dto.setActive(policySet.getBoolean(IS_ACTIVE));
-                        // Get policy attributes
-                        dto.setAttributeDTOs(getPolicyAttributes(connection, tenantId, policyId, version));
-
+                        dto.setAttributeDTOs(attributes);
                         policies.add(dto);
                     }
-                    return policies.toArray(new PolicyDTO[0]);
+                    return policies.toArray(new PolicyStoreDTO[0]);
                 }
             }
         } catch (SQLException e) {
             throw new EntitlementException("Error while retrieving PDP policies", e);
+        }
+    }
+
+    /**
+     * DAO method to get PDP policy ids.
+     *
+     * @param tenantId tenant ID.
+     * @throws EntitlementException If an error occurs.
+     */
+    public List<String> getPublishedPolicyIds(int tenantId) throws EntitlementException {
+
+        List<String> policyIds = new ArrayList<>();
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
+            try (NamedPreparedStatement prepStmt = new NamedPreparedStatement(connection, GET_PDP_POLICY_IDS_SQL)) {
+                prepStmt.setBoolean(IS_IN_PDP, IN_PDP);
+                prepStmt.setInt(TENANT_ID, tenantId);
+
+                try (ResultSet resultSet = prepStmt.executeQuery()) {
+                    while (resultSet.next()) {
+                        policyIds.add(resultSet.getString(POLICY_ID));
+                    }
+                    return policyIds;
+                }
+            }
+        } catch (SQLException e) {
+            throw new EntitlementException("Error while retrieving PDP policy ids", e);
         }
     }
 
