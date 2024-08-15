@@ -59,6 +59,8 @@ import java.util.Set;
 
 import javax.xml.stream.XMLStreamException;
 
+import static org.wso2.carbon.identity.entitlement.PDPConstants.MODULE_NAME;
+
 /**
  * This implementation handles the XACML policy management in the Registry.
  */
@@ -67,7 +69,6 @@ public class RegistryPolicyPersistenceManager extends AbstractPolicyFinderModule
     // The logger that is used for all messages
     private static final Log LOG = LogFactory.getLog(RegistryPolicyPersistenceManager.class);
     private static final String KEY_VALUE_POLICY_META_DATA = "policyMetaData";
-    private static final String MODULE_NAME = "Registry Policy Finder Module";
     private static final String POLICY_STORE_PATH = "policyStorePath";
     private static final String DEFAULT_POLICY_STORE_PATH = "/repository/identity/entitlement/policy/pdp/";
     private static final String INVALID_POLICY_VERSION = "Invalid policy version";
